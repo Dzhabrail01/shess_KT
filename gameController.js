@@ -1,31 +1,45 @@
 let curBoard;
 let curPlayer;
-
 let curHeldPiece;
 let curHeldPieceStartingPosition;
 
+
+let whiteTime = 600; 
+let blackTime = 600;
+let timerInterval;
+let isWhiteTurn = true;
+
+
 function startGame() {
-    const starterPosition = [['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
-    ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
-    ['.', '.', '.', '.', '.', '.', '.', '.'],
-    ['.', '.', '.', '.', '.', '.', '.', '.'],
-    ['.', '.', '.', '.', '.', '.', '.', '.'],
-    ['.', '.', '.', '.', '.', '.', '.', '.'],
-    ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
-    ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r']];
+    const starterPosition = [
+        ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
+        ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+        ['.', '.', '.', '.', '.', '.', '.', '.'],
+        ['.', '.', '.', '.', '.', '.', '.', '.'],
+        ['.', '.', '.', '.', '.', '.', '.', '.'],
+        ['.', '.', '.', '.', '.', '.', '.', '.'],
+        ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+        ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r']
+    ];
 
     const starterPlayer = 'white';
-
     loadPosition(starterPosition, starterPlayer);
+    initTimers();
 }
 
 function loadPosition(position, playerToMove) {
     curBoard = position;
     curPlayer = playerToMove;
+    isWhiteTurn = playerToMove === 'white';
 
+    
+    const pieces = document.querySelectorAll('.piece');
+    pieces.forEach(piece => piece.remove());
+
+    
     for (let i = 0; i < 8; i++) {
         for (let j = 0; j < 8; j++) {
-            if (position[i][j] != '.') {
+            if (position[i][j] !== '.') {
                 loadPiece(position[i][j], [i + 1, j + 1]);
             }
         }
@@ -34,127 +48,236 @@ function loadPosition(position, playerToMove) {
 
 function loadPiece(piece, position) {
     const squareElement = document.getElementById(`${position[0]}${position[1]}`);
-
     const pieceElement = document.createElement('img');
+    
     pieceElement.classList.add('piece');
     pieceElement.id = piece;
     pieceElement.draggable = false;
     pieceElement.src = getPieceImageSource(piece);
-
+    
     squareElement.appendChild(pieceElement);
 }
 
 function getPieceImageSource(piece) {
-    switch (piece) {
-        case 'R': return 'assets/black_rook.png';
-        case 'N': return 'assets/black_knight.png';
-        case 'B': return 'assets/black_bishop.png';
-        case 'Q': return 'assets/black_queen.png';
-        case 'K': return 'assets/black_king.png';
-        case 'P': return 'assets/black_pawn.png';
-        case 'r': return 'assets/white_rook.png';
-        case 'n': return 'assets/white_knight.png';
-        case 'b': return 'assets/white_bishop.png';
-        case 'q': return 'assets/white_queen.png';
-        case 'k': return 'assets/white_king.png';
-        case 'p': return 'assets/white_pawn.png';
-    }
+    const pieceImages = {
+        'R': 'assets/black_rook.png',
+        'N': 'assets/black_knight.png',
+        'B': 'assets/black_bishop.png',
+        'Q': 'assets/black_queen.png',
+        'K': 'assets/black_king.png',
+        'P': 'assets/black_pawn.png',
+        'r': 'assets/white_rook.png',
+        'n': 'assets/white_knight.png',
+        'b': 'assets/white_bishop.png',
+        'q': 'assets/white_queen.png',
+        'k': 'assets/white_king.png',
+        'p': 'assets/white_pawn.png'
+    };
+    return pieceImages[piece];
 }
 
-function setPieceHoldEvents() {
-    let mouseX, mouseY = 0;
 
-    document.addEventListener('mousemove', function(event) {
-        mouseX = event.clientX;
-        mouseY = event.clientY;
-    });
+function initTimers() {
+    updateTimerDisplay();
+    startTimer();
+}
 
-    let pieces = document.getElementsByClassName('piece');
-    let movePieceInterval;
-    let hasIntervalStarted = false;
-
-    for (const piece of pieces) {
-        piece.addEventListener('mousedown', function(event) {
-            mouseX = event.clientX;
-            mouseY = event.clientY;
+function startTimer() {
+    clearInterval(timerInterval); 
+    timerInterval = setInterval(() => {
+        if (isWhiteTurn) {
+            whiteTime--;
+        } else {
+            blackTime--;
+        }
         
-            if (hasIntervalStarted === false) {
-                piece.style.position = 'absolute';
-
-                curHeldPiece = piece;
-                const curHeldPieceStringPosition = piece.parentElement.id.split('');
-
-                curHeldPieceStartingPosition = [parseInt(curHeldPieceStringPosition[0]) - 1, parseInt(curHeldPieceStringPosition[1]) - 1];
-
-                movePieceInterval = setInterval(function() {
-                    piece.style.top = mouseY - piece.offsetHeight / 2 + window.scrollY + 'px';
-                    piece.style.left = mouseX - piece.offsetWidth / 2 + window.scrollX + 'px';
-                }, 1);
+        updateTimerDisplay();
         
-                hasIntervalStarted = true;
+        if (whiteTime <= 0) {
+            endGame("Черные выиграли по времени!");
+        } else if (blackTime <= 0) {
+            endGame("Белые выиграли по времени!");
+        }
+    }, 1000);
+}
+
+function updateTimerDisplay() {
+    const formatTime = (time) => {
+        const minutes = Math.floor(time / 60);
+        const seconds = time % 60;
+        return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+    };
+
+    document.getElementById('white-time').textContent = formatTime(whiteTime);
+    document.getElementById('black-time').textContent = formatTime(blackTime);
+}
+
+
+function highlightPossibleMoves(position) {
+    clearHighlights();
+    
+    for (let i = 0; i < 8; i++) {
+        for (let j = 0; j < 8; j++) {
+            if (validateMovement(position, [i, j])) {
+                const square = document.getElementById(`${i + 1}${j + 1}`);
+                square.classList.add('possible-move');
             }
-        });
-    }
-        
-    document.addEventListener('mouseup', function(event) {
-        window.clearInterval(movePieceInterval);
-
-        if (curHeldPiece != null) {
-            const boardElement = document.querySelector('.board');
-
-            if ((event.clientX > boardElement.offsetLeft - window.scrollX && event.clientX < boardElement.offsetLeft + boardElement.offsetWidth - window.scrollX) &&
-                (event.clientY > boardElement.offsetTop - window.scrollY && event.clientY < boardElement.offsetTop + boardElement.offsetHeight - window.scrollY)) {
-                    const mousePositionOnBoardX = event.clientX - boardElement.offsetLeft + window.scrollX;
-                    const mousePositionOnBoardY = event.clientY - boardElement.offsetTop + window.scrollY;
-
-                    const boardBorderSize = parseInt(getComputedStyle(document.querySelector('.board'), null)
-                                                .getPropertyValue('border-left-width')
-                                                .split('px')[0]);
-
-                    const xPosition = Math.floor((mousePositionOnBoardX - boardBorderSize) / document.getElementsByClassName('square')[0].offsetWidth);
-                    const yPosition = Math.floor((mousePositionOnBoardY - boardBorderSize) / document.getElementsByClassName('square')[0].offsetHeight);
-
-                    const pieceReleasePosition = [yPosition, xPosition];
-
-                    if (!(pieceReleasePosition[0] == curHeldPieceStartingPosition[0] && pieceReleasePosition[1] == curHeldPieceStartingPosition[1])) {
-                        if (validateMovement(curHeldPieceStartingPosition, pieceReleasePosition)) {
-                            movePiece(curHeldPiece, curHeldPieceStartingPosition, pieceReleasePosition);
-                        }
-                    }
-                }
-
-            curHeldPiece.style.position = 'static';
-            curHeldPiece = null;
-            curHeldPieceStartingPosition = null;
         }
-    
-        hasIntervalStarted = false;
+    }
+}
+
+function clearHighlights() {
+    document.querySelectorAll('.square').forEach(square => {
+        square.classList.remove('possible-move');
     });
 }
 
-function movePiece(piece, startingPosition, endingPosition) {
-    // move validations to validateMovement()
-    const boardPiece = curBoard[startingPosition[0]][startingPosition[1]];
+
+function endGame(message) {
+    clearInterval(timerInterval);
+    document.getElementById('game-result-text').textContent = message;
+    document.getElementById('game-over-modal').style.display = 'block';
+}
+
+function restartGame() {
+   
+    whiteTime = 600;
+    blackTime = 600;
+    isWhiteTurn = true;
     
-    if (boardPiece != '.') {
-        if ((boardPiece === boardPiece.toUpperCase() && curPlayer == 'black') ||
-            (boardPiece === boardPiece.toLowerCase() && curPlayer == 'white')) {
-                curBoard[startingPosition[0]][startingPosition[1]] = '.';
-                curBoard[endingPosition[0]][endingPosition[1]] = boardPiece;
+    
+    document.querySelectorAll('.piece').forEach(piece => piece.remove());
+    
+  
+    startGame();
+   
+    document.getElementById('game-over-modal').style.display = 'none';
+}
 
-                const destinationSquare = document.getElementById(`${endingPosition[0] + 1}${endingPosition[1] + 1}`);
-                destinationSquare.textContent = '';
-                destinationSquare.appendChild(piece);
+function isFriendlyPieceOnEndingPosition(endingPosition, pieceColor) {
+    const piece = curBoard[endingPosition[0]][endingPosition[1]];
+    if (piece === '.') return false;
+    return (piece === piece.toUpperCase() && pieceColor === 'black') || 
+           (piece === piece.toLowerCase() && pieceColor === 'white');
+}
 
-                // check if is check/checkmate
+function isEnemyPieceOnEndingPosition(endingPosition, pieceColor) {
+    const piece = curBoard[endingPosition[0]][endingPosition[1]];
+    if (piece === '.') return false;
+    return (piece === piece.toUpperCase() && pieceColor === 'white') || 
+           (piece === piece.toLowerCase() && pieceColor === 'black');
+}
 
-                if (curPlayer == 'white') {
-                    curPlayer = 'black';
-                } else {
-                    curPlayer = 'white';
-                }
-        }
+function validatePathIsBlocked(start, end) {
+    const dx = Math.sign(end[1] - start[1]);
+    const dy = Math.sign(end[0] - start[0]);
+    let x = start[1] + dx;
+    let y = start[0] + dy;
+    
+    while (x !== end[1] || y !== end[0]) {
+        if (curBoard[y][x] !== '.') return true;
+        x += dx;
+        y += dy;
     }
+    return false;
+}
+
+function validateRookMovement(start, end) {
+    const piece = curBoard[start[0]][start[1]];
+    const pieceColor = piece === piece.toUpperCase() ? 'black' : 'white';
+    
+    
+    if (start[0] !== end[0] && start[1] !== end[1]) return false;
+    
+   
+    if (validatePathIsBlocked(start, end)) return false;
+    
+   
+    if (isFriendlyPieceOnEndingPosition(end, pieceColor)) return false;
+    
+    return true;
+}
+
+function validateKnightMovement(start, end) {
+    const piece = curBoard[start[0]][start[1]];
+    const pieceColor = piece === piece.toUpperCase() ? 'black' : 'white';
+    const dx = Math.abs(start[1] - end[1]);
+    const dy = Math.abs(start[0] - end[0]);
+    
+   
+    if (!((dx === 2 && dy === 1) || (dx === 1 && dy === 2))) return false;
+    
+   
+    if (isFriendlyPieceOnEndingPosition(end, pieceColor)) return false;
+    
+    return true;
+}
+
+function validateBishopMovement(start, end) {
+    const piece = curBoard[start[0]][start[1]];
+    const pieceColor = piece === piece.toUpperCase() ? 'black' : 'white';
+    const dx = Math.abs(start[1] - end[1]);
+    const dy = Math.abs(start[0] - end[0]);
+    
+   
+    if (dx !== dy) return false;
+    
+   
+    if (validatePathIsBlocked(start, end)) return false;
+    
+    
+    if (isFriendlyPieceOnEndingPosition(end, pieceColor)) return false;
+    
+    return true;
+}
+
+function validateQueenMovement(start, end) {
+   
+    return validateRookMovement(start, end) || validateBishopMovement(start, end);
+}
+
+function validateKingMovement(start, end) {
+    const piece = curBoard[start[0]][start[1]];
+    const pieceColor = piece === piece.toUpperCase() ? 'black' : 'white';
+    const dx = Math.abs(start[1] - end[1]);
+    const dy = Math.abs(start[0] - end[0]);
+    
+    
+    if (dx > 1 || dy > 1) return false;
+    
+    
+    if (isFriendlyPieceOnEndingPosition(end, pieceColor)) return false;
+    
+    return true;
+}
+
+function validatePawnMovement(color, start, end) {
+    const piece = curBoard[start[0]][start[1]];
+    const pieceColor = piece === piece.toUpperCase() ? 'black' : 'white';
+    const direction = color === 'white' ? -1 : 1;
+    const startRow = color === 'white' ? 6 : 1;
+    const dx = end[1] - start[1];
+    const dy = end[0] - start[0];
+    
+  
+    if (dx === 0 && dy === direction && curBoard[end[0]][end[1]] === '.') {
+        return true;
+    }
+    
+    
+    if (dx === 0 && dy === 2 * direction && start[0] === startRow && 
+        curBoard[start[0] + direction][start[1]] === '.' && 
+        curBoard[end[0]][end[1]] === '.') {
+        return true;
+    }
+    
+    
+    if (Math.abs(dx) === 1 && dy === direction && 
+        isEnemyPieceOnEndingPosition(end, pieceColor)) {
+        return true;
+    }
+    
+    return false;
 }
 
 function validateMovement(startingPosition, endingPosition) {
@@ -173,184 +296,133 @@ function validateMovement(startingPosition, endingPosition) {
         case 'K': return validateKingMovement(startingPosition, endingPosition);
         case 'p': return validatePawnMovement('white', startingPosition, endingPosition);
         case 'P': return validatePawnMovement('black', startingPosition, endingPosition);
+        default: return false;
     }
 }
 
-function validateBishopMovement(startingPosition, endingPosition) {
-    if (endingPosition[0] - endingPosition[1] == startingPosition[0] - startingPosition[1] ||
-        endingPosition[0] + endingPosition[1] == startingPosition[0] + startingPosition[1]) {
-            if (!validatePathIsBlocked(startingPosition, endingPosition)) {
-                return false;
+
+function setPieceHoldEvents() {
+    let mouseX = 0, mouseY = 0;
+    let movePieceInterval;
+    let hasIntervalStarted = false;
+
+    document.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+    });
+
+    document.addEventListener('mouseup', () => {
+        clearInterval(movePieceInterval);
+        
+        if (curHeldPiece) {
+            const boardElement = document.querySelector('.board');
+            const boardRect = boardElement.getBoundingClientRect();
+            
+            if (mouseX >= boardRect.left && mouseX <= boardRect.right &&
+                mouseY >= boardRect.top && mouseY <= boardRect.bottom) {
+                
+                const squareSize = boardRect.width / 8;
+                const col = Math.floor((mouseX - boardRect.left) / squareSize);
+                const row = Math.floor((mouseY - boardRect.top) / squareSize);
+                
+                const releasePos = [row, col];
+                
+                if (!(releasePos[0] === curHeldPieceStartingPosition[0] && 
+                      releasePos[1] === curHeldPieceStartingPosition[1])) {
+                    if (validateMovement(curHeldPieceStartingPosition, releasePos)) {
+                        movePiece(curHeldPiece, curHeldPieceStartingPosition, releasePos);
+                    }
+                }
             }
-            // validate if move puts own king in check
-            return true;
-    } else {
-        return false;
-    }
-}
-
-function validateRookMovement(startingPosition, endingPosition) {
-    if (endingPosition[0] == startingPosition[0] || endingPosition[1] == startingPosition[1]) {
-        if (!validatePathIsBlocked(startingPosition, endingPosition)) {
-            return false;
+            
+            curHeldPiece.style.position = 'static';
+            curHeldPiece.style.zIndex = 'auto';
+            curHeldPiece = null;
+            clearHighlights();
         }
-        // validate if move puts own king in check
-        return true;
-    } else {
-        return false;
-    }
+        
+        hasIntervalStarted = false;
+    });
+
+    document.querySelectorAll('.piece').forEach(piece => {
+        piece.addEventListener('mousedown', (e) => {
+            if (hasIntervalStarted) return;
+            
+            
+            const pieceColor = piece.id === piece.id.toUpperCase() ? 'black' : 'white';
+            if (pieceColor !== curPlayer) return;
+            
+            e.preventDefault();
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            
+            piece.style.position = 'absolute';
+            piece.style.zIndex = '1000';
+            curHeldPiece = piece;
+            
+            const parentId = piece.parentElement.id;
+            curHeldPieceStartingPosition = [
+                parseInt(parentId[0]) - 1,
+                parseInt(parentId[1]) - 1
+            ];
+            
+            
+            highlightPossibleMoves(curHeldPieceStartingPosition);
+            
+            movePieceInterval = setInterval(() => {
+                piece.style.top = `${mouseY - piece.offsetHeight / 2}px`;
+                piece.style.left = `${mouseX - piece.offsetWidth / 2}px`;
+            }, 10);
+            
+            hasIntervalStarted = true;
+        });
+    });
 }
 
-function validateKingMovement(startingPosition, endingPosition) {
-    if ([-1, 0, 1].includes(endingPosition[0] - startingPosition[0]) && [-1, 0, 1].includes(endingPosition[1] - startingPosition[1])) {
-        if (isFriendlyPieceOnEndingPosition(endingPosition)) {
-            return false;
-        }
-        // validate if move puts own king in check
-        // validate castling
-        return true;
-    } else {
-        return false;
-    }
-}
-
-function validateQueenMovement(startingPosition, endingPosition) {
-    if (endingPosition[0] - endingPosition[1] == startingPosition[0] - startingPosition[1] ||
-        endingPosition[0] + endingPosition[1] == startingPosition[0] + startingPosition[1] ||
-        endingPosition[0] == startingPosition[0] || endingPosition[1] == startingPosition[1]) {
-            if (!validatePathIsBlocked(startingPosition, endingPosition)) {
-                return false;
-            }
-            // validate if move puts own king in check
-            return true;
-    } else {
-        return false;
-    }
-}
-
-function validatePawnMovement(pawnColor, startingPosition, endingPosition) {
-    direction = pawnColor == 'black' ? 1 : -1;
-
-    let isCapture = false;
-
-    if (endingPosition[0] == startingPosition[0] + direction &&
-        [startingPosition[1] - 1, startingPosition[1] + 1].includes(endingPosition[1])) {
-            // validate if is en passant
-            if (isEnemyPieceOnEndingPosition(endingPosition)) {
-                isCapture = true;
-            }
-        }
-
-    // validate if is promotion
-    let isFirstMove = false;
-
-    if ((pawnColor == 'white' && startingPosition[0] == 6) || (pawnColor == 'black' && startingPosition[0] == 1)) {
-        isFirstMove = true;
-    }
-
-    if (((endingPosition[0] == startingPosition[0] + direction || (endingPosition[0] == startingPosition[0] + direction * 2 && isFirstMove)) &&
-         endingPosition[1] == startingPosition[1]) || isCapture) {
-            if (isFriendlyPieceOnEndingPosition(endingPosition)) {
-                return false;
-            } else if (!isCapture && isEnemyPieceOnEndingPosition(endingPosition)) {
-                return false;
-            }
-
-            // validate if move puts own king in check
-            return true;
-    } else {
-        return false;
-    }
-}
-
-function validateKnightMovement(startingPosition, endingPosition) {
-    if (([-2, 2].includes(endingPosition[0] - startingPosition[0]) && [-1, 1].includes(endingPosition[1] - startingPosition[1])) || 
-        ([-2, 2].includes(endingPosition[1] - startingPosition[1]) && [-1, 1].includes(endingPosition[0] - startingPosition[0]))) {
-            if (isFriendlyPieceOnEndingPosition(endingPosition)) {
-                return false;
-            }
-            // validate if move puts own king in check
-            return true;
-    } else {
-        return false;
-    }
-}
-
-function validatePathIsBlocked(startingPosition, endingPosition) {
-    const xDifference = endingPosition[0] - startingPosition[0]
-    const yDifference = endingPosition[1] - startingPosition[1]
-
-    let xDirection = 0;
-    let yDirection = 0;
-
-    if (xDifference < 0) {
-        xDirection = -1;
-    } else if (xDifference > 0) {
-        xDirection = 1;
-    }
-
-    if (yDifference < 0) {
-        yDirection = -1;
-    } else if (yDifference > 0) {
-        yDirection = 1;
-    }
-
-    let squareX = startingPosition[0] + xDirection;
-    let squareY = startingPosition[1] + yDirection;
-
-    while (squareX != endingPosition[0] || squareY != endingPosition[1]) {
-        const isSquareOccupied = document.getElementById(`${squareX + 1}${squareY + 1}`).children.length > 0;
-
-        if (isSquareOccupied) {
-            return false;
-        }
-
-        squareX += xDirection;
-        squareY += yDirection;
-    }
+function movePiece(piece, startingPosition, endingPosition) {
+    const boardPiece = curBoard[startingPosition[0]][startingPosition[1]];
     
-    if (isFriendlyPieceOnEndingPosition(endingPosition)) {
-        return false;
-    } else {
-        // enemy piece has been captured
+    if (boardPiece !== '.') {
+        
+        if ((boardPiece === boardPiece.toUpperCase() && curPlayer === 'black') ||
+            (boardPiece === boardPiece.toLowerCase() && curPlayer === 'white')) {
+            
+           
+            const destSquare = document.getElementById(`${endingPosition[0] + 1}${endingPosition[1] + 1}`);
+            if (destSquare.firstChild) {
+                destSquare.removeChild(destSquare.firstChild);
+            }
+            
+           
+            curBoard[startingPosition[0]][startingPosition[1]] = '.';
+            curBoard[endingPosition[0]][endingPosition[1]] = boardPiece;
+            
+            
+            piece.style.position = 'static';
+            piece.style.zIndex = 'auto';
+            destSquare.appendChild(piece);
+            
+            
+            curPlayer = curPlayer === 'white' ? 'black' : 'white';
+            isWhiteTurn = !isWhiteTurn;
+            startTimer(); 
+            
+            
+            if (isCheckmate()) {
+                endGame(`${curPlayer === 'white' ? 'Черные' : 'Белые'} выиграли по мату!`);
+            }
+        }
     }
-
-    return true;
 }
 
-function isFriendlyPieceOnEndingPosition(endingPosition) {
-    const destinationSquare = document.getElementById(`${endingPosition[0] + 1}${endingPosition[1] + 1}`);
-
-    if (destinationSquare.children.length > 0) {
-        const destinationPiece = destinationSquare.querySelector('.piece').id;
+function isCheckmate() {
     
-        if (destinationPiece == destinationPiece.toUpperCase() && curPlayer == 'black' ||
-            destinationPiece == destinationPiece.toLowerCase() && curPlayer == 'white') {
-                return true;
-        } else {
-            return false;
-        }        
-    } else {
-        return false;
-    }
+    return false;
 }
 
-function isEnemyPieceOnEndingPosition(endingPosition) {
-    const destinationSquare = document.getElementById(`${endingPosition[0] + 1}${endingPosition[1] + 1}`);
 
-    if (destinationSquare.children.length > 0) {
-        const destinationPiece = destinationSquare.querySelector('.piece').id;
-    
-        if (destinationPiece == destinationPiece.toUpperCase() && curPlayer == 'white' ||
-            destinationPiece == destinationPiece.toLowerCase() && curPlayer == 'black') {
-                return true;
-        } else {
-            return false;
-        }        
-    } else {
-        return false;
-    }
-}
-
-startGame();
-setPieceHoldEvents();
+document.addEventListener('DOMContentLoaded', () => {
+    startGame();
+    setPieceHoldEvents();
+    document.getElementById('restart-button').addEventListener('click', restartGame);
+});
