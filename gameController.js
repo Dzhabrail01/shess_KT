@@ -383,30 +383,31 @@ function movePiece(piece, startingPosition, endingPosition) {
     const boardPiece = curBoard[startingPosition[0]][startingPosition[1]];
     
     if (boardPiece !== '.') {
-        
         if ((boardPiece === boardPiece.toUpperCase() && curPlayer === 'black') ||
             (boardPiece === boardPiece.toLowerCase() && curPlayer === 'white')) {
             
-           
+            const targetPiece = curBoard[endingPosition[0]][endingPosition[1]];
+            if (targetPiece === 'k' || targetPiece === 'K') {
+                const winner = targetPiece === 'k' ? 'Черные' : 'Белые';
+                endGame(`${winner} выиграли, съев короля!`);
+                return;
+            }
+            
             const destSquare = document.getElementById(`${endingPosition[0] + 1}${endingPosition[1] + 1}`);
             if (destSquare.firstChild) {
                 destSquare.removeChild(destSquare.firstChild);
             }
             
-           
             curBoard[startingPosition[0]][startingPosition[1]] = '.';
             curBoard[endingPosition[0]][endingPosition[1]] = boardPiece;
-            
             
             piece.style.position = 'static';
             piece.style.zIndex = 'auto';
             destSquare.appendChild(piece);
             
-            
             curPlayer = curPlayer === 'white' ? 'black' : 'white';
             isWhiteTurn = !isWhiteTurn;
-            startTimer(); 
-            
+            startTimer();
             
             if (isCheckmate()) {
                 endGame(`${curPlayer === 'white' ? 'Черные' : 'Белые'} выиграли по мату!`);
